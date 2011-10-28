@@ -5,8 +5,7 @@
     "keywords": ["gestures", "custom events"],
     "author": "Paul Armstrong <paul@paularmstrongdesigns.com>",
     "devDependencies": {
-        "nodelint": ">=0.5.1",
-        "nodeunit": ">=0.5.5"
+        "nodelint": ">=0.5.1"
     },
     "main": "lib/gestures",
     "engines": {
