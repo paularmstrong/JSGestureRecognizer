@@ -27,7 +27,7 @@ var options = {
     on: false,
     passfail: false,
     plusplus: false,
-    predef: ['_', 'HTMLElement'],
+    predef: ['_', 'HTMLElement', 'CreateRecognizer'],
     regexp: true,
     rhino: false,
     safe: false,
