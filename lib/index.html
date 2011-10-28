@@ -35,6 +35,10 @@
     <div id="console"></div>
 
     <script>
+    window.addEventListener('touchmove', function (event) {
+        event.preventDefault();
+    }, true);
+
     var area = document.querySelector('#touch'),
         cons = document.querySelector('#console');
 
