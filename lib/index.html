@@ -40,7 +40,7 @@
 
     function logEvent(event) {
         var p = document.createElement('p');
-        p.innerHTML = event.type;
+        p.innerHTML = event.type + ', ' + _.keys(event).toString();
         cons.appendChild(p);
 
         cons.scrollTop = cons.scrollHeight;
@@ -48,6 +48,7 @@
 
     area.addEventListener('tap', logEvent, false);
     area.addEventListener('doubletap', logEvent, false);
+    area.addEventListener('swipe', logEvent, false);
     </script>
 
 </body>
