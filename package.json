@@ -1,6 +1,6 @@
 {
-    "name": "gestures",
-    "version": "0.0.0",
+    "name": "JSGestureRecognizer",
+    "version": "0.0.1",
     "description": "A small suite of gesture recognizers for JavaScript.",
     "keywords": ["gestures", "custom events"],
     "author": "Paul Armstrong <paul@paularmstrongdesigns.com>",
@@ -10,10 +10,6 @@
     "main": "lib/gestures",
     "engines": {
         "node": ">= 0.4.1"
-    },
-    "scripts": {
-        "prepublish": "npm prune",
-        "test": "make lint && make test"
     },
     "private": true
 }
