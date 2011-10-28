@@ -1,6 +1,6 @@
 module.exports = {
     root: __dirname + '/../',
-    pathIgnore: ['*node_modules*']
+    pathIgnore: ['*node_modules*', '*underscore.js*']
 };
 
 var options = {
@@ -27,7 +27,7 @@ var options = {
     on: false,
     passfail: false,
     plusplus: false,
-    predef: [],
+    predef: ['_', 'HTMLElement'],
     regexp: true,
     rhino: false,
     safe: false,

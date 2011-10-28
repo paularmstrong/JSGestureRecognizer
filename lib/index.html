@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Test Page</title>
+
+    <meta name="viewport" content="initial-scale=1.0 maximum-scale=1.0 minimum-scale=1.0 user-scalable=no">
+
+    <script src="underscore.js"></script>
+    <script src="gestures.js"></script>
+
+    <style>
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+    #touch {
+        height: 238px;
+        background: #EEE;
+        border: 2px solid #F00;
+    }
+    #console {
+        background: #000;
+        color: #FFF;
+        font: 10px/14px Monaco, "Courier New", Courier, monospace;
+        height: 240px;
+        overflow: auto;
+    }
+        #console p { margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="touch"></div>
+    <div id="console"></div>
+
+    <script>
+    var area = document.querySelector('#touch'),
+        cons = document.querySelector('#console');
+
+    function logEvent(event) {
+        var p = document.createElement('p');
+        p.innerHTML = event.type;
+        cons.appendChild(p);
+
+        cons.scrollTop = cons.scrollHeight;
+    }
+
+    area.addEventListener('tap', logEvent, false);
+    area.addEventListener('doubletap', logEvent, false);
+    </script>
+
+</body>
+</html>
