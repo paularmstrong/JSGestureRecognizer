@@ -14,10 +14,15 @@ Gesture Events
 --------------
 
 * doubletap
+* longpress
 * pinch
 * rotate
 * swipe
 * tap
+
+You can specify the number of touches required for an event to fire by using `:#` notation:
+
+    element.addEventListener('doubletap:2', function (e) { console.log('double tap with two fingers'); }, false);
 
 Building
 --------
