@@ -1,4 +1,4 @@
-/*! JSGestureRecognizer v0.1.0 http://paularmstrong.github.com/JSGestureRecognizer | http://paularmstrong.github.com/JSGestureRecognizer/license.html */
+/*! JSGestureRecognizer v0.2.0 http://paularmstrong.github.com/JSGestureRecognizer | http://paularmstrong.github.com/JSGestureRecognizer/license.html */
 (function () {
 var JSGestureRecognizer,
     recognizers = {};
@@ -32,29 +32,89 @@ function extend() {
     ext(arguments["0"], arguments["1"]);
 }
 
-JSGestureRecognizer = function (target) {
+function normalizeEventName(name) {
+    if (typeof document.createTouch !== 'undefined') {
+        return name;
+    }
+
+    switch (name) {
+    case 'touchstart':
+        return 'mousedown';
+    case 'touchmove':
+        return 'mousemove';
+    case 'touchend':
+        return 'mouseup';
+    default:
+        return name;
+    }
+}
+
+function normalizeEvent(e) {
+    if (typeof document.createTouch !== 'undefined') {
+        return;
+    }
+
+    e.changedTouches = [{ pageX: e.pageX, pageY: e.pageY }];
+    e.touches = [{ pageX: e.pageX, pageY: e.pageY }];
+}
+
+JSGestureRecognizer = function (target, touchCount) {
     this.target = target;
+    this.touchCount = touchCount;
     this.init();
 };
 JSGestureRecognizer.prototype = {
-    listeners: [],
-    shouldFire: true,
+    timer: null,
+    cancels: [],
 
+    listeners: [],
+    shouldFire: false,
     init: function () {},
+
+    _start: function (e) {
+        this.isTracking = true;
+        normalizeEvent(e);
+        this.start(e);
+    },
+    _move: function (e) {
+        if (!this.isTracking) {
+            return;
+        }
+
+        normalizeEvent(e);
+        this.move(e);
+    },
+    _end: function (e) {
+        this.isTracking = false;
+        normalizeEvent(e);
+        this.end(e);
+    },
 
     start: function () {},
     move: function () {},
     end: function () {},
 
+    invalidate: function () {
+        this.shouldFire = false;
+        clearTimeout(this.timer);
+        this.timer = null;
+    },
+
+    validate: function () {
+        this.shouldFire = true;
+    },
+
     addListeners: function (types) {
         var l = types.length,
             i = 0,
             type,
+            oType,
             cb;
         for (; i < l; i += 1) {
-            type = types[i];
-            cb = this[type.replace(/^touch/, '')].bind(this);
-            this.listeners.push({ type: type, cb: cb });
+            oType = types[i];
+            type = normalizeEventName(oType);
+            cb = this['_' + oType.replace(/^touch/, '')].bind(this);
+            this.listeners.push({ type: oType, cb: cb });
             this.target.__addEventListener(type, cb, false);
         }
     },
@@ -65,7 +125,20 @@ JSGestureRecognizer.prototype = {
         }
 
         var evt = document.createEvent('Events'),
-            name = (suffix) ? this.name + suffix : this.name;
+            name = (suffix) ? this.name + suffix : this.name,
+            gesture,
+            i = 0;
+
+        for (gesture in this.target.__recognizers) {
+            if (this.target.__recognizers.hasOwnProperty(gesture) && this.cancels.indexOf(gesture) !== -1) {
+                gesture = this.target.__recognizers[gesture];
+                i = gesture.length;
+                while (i) {
+                    i -= 1;
+                    gesture[i].recognizer.invalidate();
+                }
+            }
+        }
 
         evt.initEvent(name, true, true, e);
         extend(evt, custom || {});
@@ -84,8 +157,9 @@ JSGestureRecognizer.prototype = {
 };
 
 window.CreateRecognizer = function (name, proto) {
-    recognizers[name] = function (target) {
+    recognizers[name] = function (target, touchCount) {
         this.target = target;
+        this.touchCount = (touchCount < this.minTouches) ? this.minTouches : touchCount;
         this.init();
         this.addListeners(['touchstart', 'touchmove', 'touchend']);
     };
@@ -109,10 +183,11 @@ window.CreateRecognizer = function (name, proto) {
     return recognizers[name];
 };
 
-function findOthers(type, nType, el) {
+function findOthers(type, nType, touchCount, el) {
     var types = [nType, nType + 'start', nType + 'end'],
         l = types.length,
         i = 0,
+        n,
         etype;
 
     for (; i < l; i += 1) {
@@ -123,21 +198,39 @@ function findOthers(type, nType, el) {
         }
 
         if (el.__recognizers.hasOwnProperty(etype) && el.__recognizers[etype].length) {
-            return el.__recognizers[etype][0];
+            n = el.__recognizers[etype].length;
+            while (n) {
+                n -= 1;
+                if (el.__recognizers[etype][n].touches === touchCount) {
+                    return el.__recognizers[etype][n];
+                }
+            }
         }
     }
     return null;
 }
 
+function getType(type) {
+    return type.replace(/\:\d+$/, '');
+}
+
 function getNormalizedType(type) {
-    return type.replace(/start$|end$/, '');
+    return getType(type.replace(/start(\:\d+)?$|end(\:\d+)?$/, ''));
+}
+
+function getTouchCount(type) {
+    var match = type.match(/\:(\d+)$/);
+    return (match && match.length) ? parseInt(match[1], 10) : 1;
 }
 
 HTMLElement.prototype.__addEventListener = HTMLElement.prototype.addEventListener;
 HTMLElement.prototype.__removeEventListener = HTMLElement.prototype.removeEventListener;
 HTMLElement.prototype.addEventListener = function (type, listener, useCapture) {
     var nType = getNormalizedType(type),
+        touchCount = getTouchCount(type),
         listened;
+
+    type = getType(type);
 
     if (!this.__recognizers) {
         this.__recognizers = {};
@@ -151,12 +244,12 @@ HTMLElement.prototype.addEventListener = function (type, listener, useCapture) {
     }
 
     if (recognizers.hasOwnProperty(nType)) {
-        listened = findOthers(type, nType, this);
+        listened = findOthers(type, nType, touchCount, this);
 
         if (!listened) {
-            this.__recognizers[type].push({ type: type, recognizer: new recognizers[nType](this), cb: listener });
+            this.__recognizers[type].push({ type: type, touches: touchCount, recognizer: new recognizers[nType](this, touchCount), cb: listener });
         } else {
-            this.__recognizers[type].push({ type: type, recognizer: listened.recognizer, cb: listener });
+            this.__recognizers[type].push({ type: type, touches: touchCount, recognizer: listened.recognizer, cb: listener });
         }
     }
 
@@ -165,15 +258,18 @@ HTMLElement.prototype.addEventListener = function (type, listener, useCapture) {
 
 HTMLElement.prototype.removeEventListener = function (type, listener, useCapture) {
     var nType = getNormalizedType(type),
+        touchCount = getTouchCount(type),
         i,
         obj;
+
+    type = getType(type);
 
     if (this.__recognizers && this.__recognizers.hasOwnProperty(nType)) {
         i = this.__recognizers[nType].length;
         while (i) {
             i -= 1;
             obj = this.__recognizers[nType][i];
-            if ((!listener || (obj.cb === listener)) && !findOthers(type, nType, this)) {
+            if ((!listener || (obj.cb === listener)) && !findOthers(type, nType, touchCount, this)) {
                 this.__recognizers[type][i].recognizer.removeListeners();
                 delete this.__recognizers[type][i];
             }
@@ -184,52 +280,80 @@ HTMLElement.prototype.removeEventListener = function (type, listener, useCapture
 };
 CreateRecognizer('doubletap', {
     taps: 0,
-    timer: null,
-    clear: function () {
+    invalidate: function () {
         this.shouldFire = false;
-        this.taps = 0;
         clearTimeout(this.timer);
         this.timer = null;
+        this.taps = 0;
     },
     start: function (e) {
-        if (e.touches.length === 1) {
-            this.shouldFire = true;
+        if (e.touches.length === this.touchCount) {
+            this.validate();
         } else {
-            this.shouldFire = false;
+            this.invalidate();
             return;
         }
 
         this.taps += 1;
 
-        if (!this.timer) {
+        if (this.timer === null) {
             var self = this;
             this.timer = setTimeout(function () {
-                this.clear();
-            }.bind(this), 600);
+                self.invalidate();
+            }, 800);
         }
     },
     move: function (e) {
-        this.clear();
+        this.invalidate();
     },
     end: function (e) {
         if (this.taps < 2) {
             return;
         }
 
-        if (!this.timer) {
-            this.shouldFire = false;
-            this.taps = 0;
-            return;
+        if (this.timer === null || this.taps > 2) {
+            this.invalidate();
         }
 
         this.fire(e);
-
-        if (this.shouldFire) {
-            this.clear();
+    }
+});
+CreateRecognizer('longpress', {
+    minduration: 1000,
+    maxMove: 3,
+    timer: null,
+    cancels: ['tap'],
+    start: function (e) {
+        if (e.touches.length === this.touchCount) {
+            this.validate();
+        } else {
+            this.invalidate();
         }
+
+        this.target.style.webkitUserSelect = 'none';
+        var self = this;
+
+        this.startPos = { x: e.touches[0].pageX, y: e.touches[0].pageY };
+
+        this.timer = setTimeout(function () {
+            self.fire(e);
+        }, this.minduration);
+    },
+    move: function (e) {
+        var touch = e.changedTouches[0];
+
+        if (Math.abs(touch.pageX - this.startPos.x) < this.maxMove && Math.abs(touch.pageY - this.startPos.y) < this.maxMove) {
+            return;
+        }
+
+        this.invalidate();
+    },
+    end: function (e) {
+        this.invalidate();
     }
 });
 var pinch = CreateRecognizer('pinch', {
+    minTouches: 2,
     getDistance: function (touches) {
         var touch1 = touches[0],
             touch2 = touches[1],
@@ -238,11 +362,11 @@ var pinch = CreateRecognizer('pinch', {
         return (isNaN(distance)) ? 0 : distance;
     },
     start: function (e) {
-        this.shouldFire = true;
+        this.validate();
         this.isStarted = false;
     },
     move: function (e) {
-        if (e.touches.length !== 2) {
+        if (e.touches.length !== this.touchCount) {
             return;
         }
 
@@ -267,7 +391,7 @@ var pinch = CreateRecognizer('pinch', {
         }
     },
     end: function (e) {
-        if (!this.isStarted || e.changedTouches.length !== 2) {
+        if (!this.isStarted || e.changedTouches.length !== this.touchCount) {
             return;
         }
 
@@ -283,6 +407,7 @@ var pinch = CreateRecognizer('pinch', {
 });
 var rotate = CreateRecognizer('rotate', {
     rad: 180 / Math.PI,
+    minTouches: 2,
     getAngle: function (touches) {
         var touch1 = touches[0],
             touch2 = touches[1],
@@ -291,11 +416,11 @@ var rotate = CreateRecognizer('rotate', {
         return (isNaN(angle)) ? 0 : angle;
     },
     start: function () {
-        this.shouldFire = true;
+        this.validate();
         this.isStarted = false;
     },
     move: function (e) {
-        if (e.touches.length !== 2) {
+        if (e.touches.length !== this.touchCount) {
             return;
         }
 
@@ -314,7 +439,7 @@ var rotate = CreateRecognizer('rotate', {
         }
     },
     end: function (e) {
-        if (!this.isStarted || e.changedTouches.length !== 2) {
+        if (!this.isStarted || e.changedTouches.length !== this.touchCount) {
             return;
         }
 
@@ -330,12 +455,12 @@ CreateRecognizer('swipe', {
     maxDuration: 1000,
     minDistance: 80,
     start: function (e) {
-        if (e.changedTouches.length > 1) {
-            this.shouldFire = false;
+        if (e.touches.length !== this.touchCount) {
+            this.invalidate();
             return;
         }
 
-        var touch = e.changedTouches[0];
+        var touch = e.touches[0];
 
         this.startX = touch.pageX;
         this.startY = touch.pageY;
@@ -344,11 +469,11 @@ CreateRecognizer('swipe', {
         this.horizontal = false;
         this.vertical = false;
 
-        this.shouldFire = true;
+        this.validate();
     },
     move: function (e) {
-        if (e.changedTouches.length > 1) {
-            this.shouldFire = false;
+        if (e.changedTouches.length < this.touchCount) {
+            this.invalidate();
             return;
         }
 
@@ -360,22 +485,22 @@ CreateRecognizer('swipe', {
             deltaY = Math.abs(y - this.startY);
 
         if (time - this.startTime > this.maxDuration) {
-            this.shouldFire = false;
+            this.invalidate();
             return;
         }
 
         if (deltaX > this.minDistance) {
             this.horizontal = true;
-            this.shouldFire = true;
+            this.validate();
         }
 
         if (deltaY > this.minDistance) {
             this.vertical = true;
-            this.shouldFire = true;
+            this.validate();
         }
 
         if (!this.horizontal && !this.vertical) {
-            this.shouldFire = false;
+            this.invalidate();
         }
     },
     end: function (e) {
@@ -390,10 +515,10 @@ CreateRecognizer('swipe', {
             distance;
 
         if (this.vertical) {
-            direction = (Math.abs(deltaY) > this.minDistance) ? 'down' : 'up';
+            direction = (deltaY > this.minDistance) ? 'down' : 'up';
             distance = deltaY;
         } else if (this.horizontal) {
-            direction = (Math.abs(deltaX) > this.minDistance) ? 'right' : 'left';
+            direction = (deltaX > this.minDistance) ? 'right' : 'left';
             distance = deltaX;
         } else {
             return;
@@ -404,23 +529,23 @@ CreateRecognizer('swipe', {
             distance: distance,
             duration: (new Date()) - this.startTime
         });
-        this.shouldFire = false;
+        this.invalidate();
     }
 });
 CreateRecognizer('tap', {
     start: function (e) {
-        if (e.touches.length === 1) {
-            this.shouldFire = true;
+        if (e.touches.length === this.touchCount) {
+            this.validate();
         } else {
-            this.shouldFire = false;
+            this.invalidate();
         }
     },
     move: function (e) {
-        this.shouldFire = false;
+        this.invalidate();
     },
     end: function (e) {
-        if (e.changedTouches.length !== 1) {
-            this.shouldFire = false;
+        if (e.changedTouches.length !== this.touchCount) {
+            this.invalidate();
         }
         this.fire(e);
     }
