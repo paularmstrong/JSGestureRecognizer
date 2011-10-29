@@ -19,6 +19,13 @@ Gesture Events
 * swipe
 * tap
 
+Building
+--------
+
+If you'd rather pull the repository and build the JavaScript packages yourself, just clone the repo and run the following:
+
+    make && make dist
+
 License
 -------
 
