@@ -12,6 +12,7 @@
     <script src="gestures/swipe.js"></script>
     <script src="gestures/pinch.js"></script>
     <script src="gestures/rotate.js"></script>
+    <script src="gestures/longpress.js"></script>
 
     <style>
     html, body {
@@ -58,6 +59,7 @@
     }
 
     area.addEventListener('tap', logEvent, false);
+    area.addEventListener('longpress', logEvent, false);
     area.addEventListener('doubletap', logEvent, false);
     area.addEventListener('swipe', logEvent, false);
     area.addEventListener('pinch', logEvent, false);
