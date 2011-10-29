@@ -6,7 +6,6 @@
 
     <meta name="viewport" content="initial-scale=1.0 maximum-scale=1.0 minimum-scale=1.0 user-scalable=no">
 
-    <script src="underscore.js"></script>
     <script src="gestures.js"></script>
     <script src="gestures/tap.js"></script>
     <script src="gestures/doubletap.js"></script>
@@ -52,7 +51,7 @@
 
     function logEvent(event) {
         var p = document.createElement('p');
-        p.innerHTML = event.type + ', ' + _.keys(event).toString();
+        p.innerHTML = event.type;
         cons.appendChild(p);
 
         cons.scrollTop = cons.scrollHeight;
