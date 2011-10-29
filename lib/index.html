@@ -11,14 +11,18 @@
     <script src="gestures/tap.js"></script>
     <script src="gestures/doubletap.js"></script>
     <script src="gestures/swipe.js"></script>
+    <script src="gestures/pinch.js"></script>
 
     <style>
     html, body {
         margin: 0;
         padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
     }
     #touch {
-        height: 238px;
+        height: 50%;
         background: #EEE;
         border: 2px solid #F00;
     }
@@ -26,7 +30,7 @@
         background: #000;
         color: #FFF;
         font: 10px/14px Monaco, "Courier New", Courier, monospace;
-        height: 240px;
+        height: 50%;
         overflow: auto;
     }
         #console p { margin: 0; }
@@ -56,6 +60,9 @@
     area.addEventListener('tap', logEvent, false);
     area.addEventListener('doubletap', logEvent, false);
     area.addEventListener('swipe', logEvent, false);
+    area.addEventListener('pinch', logEvent, false);
+    area.addEventListener('pinchstart', logEvent, false);
+    area.addEventListener('pinchend', logEvent, false);
     </script>
 
 </body>
