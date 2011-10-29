@@ -5,8 +5,12 @@ mkdir -p dist/
 OUT="dist/jsgestures.js"
 OUT_MIN="dist/jsgestures.min.js"
 RECOGNIZERS=lib/gestures/*
+DIR=$(dirname $0)
+VERSION=$(node $DIR/getversion.js)
 
-echo "(function () {" > $OUT
+# TODO: need URLs
+echo "/*! JSGestureRecognizer v$VERSION <URL here> | <license URL here>*/" > $OUT
+echo "(function () {" >> $OUT
 cat lib/gestures.js >> $OUT
 for f in $RECOGNIZERS
 do
@@ -16,5 +20,5 @@ echo "}());" >> $OUT
 
 node_modules/uglify-js/bin/uglifyjs $OUT > $OUT_MIN
 
-echo "Successfully packaged to dist/jsgestures.js"
+echo "Successfully packaged v$VERSION to dist/jsgestures.js"
 echo ""

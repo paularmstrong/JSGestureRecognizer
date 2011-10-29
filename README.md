@@ -10,6 +10,15 @@ Usage
 
     element.addEventListener('tap', function (e) { console.log("I'm a tap event!"); }, false);
 
+Gesture Events
+--------------
+
+* doubletap
+* pinch
+* rotate
+* swipe
+* tap
+
 License
 -------
 
