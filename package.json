@@ -1,6 +1,6 @@
 {
     "name": "JSGestureRecognizer",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "A small suite of gesture recognizers for JavaScript.",
     "keywords": ["gestures", "custom events"],
     "author": "Paul Armstrong <paul@paularmstrongdesigns.com>",
