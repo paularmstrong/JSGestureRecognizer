@@ -5,7 +5,8 @@
     "keywords": ["gestures", "custom events"],
     "author": "Paul Armstrong <paul@paularmstrongdesigns.com>",
     "devDependencies": {
-        "nodelint": ">=0.5.1"
+        "nodelint": ">=0.5.1",
+        "uglify-js": "~1"
     },
     "main": "lib/gestures",
     "engines": {

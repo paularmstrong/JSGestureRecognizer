@@ -6,4 +6,7 @@ all:
 lint:
 	@node scripts/runlint.js
 
-.PHONY: all lint
+dist:
+	@scripts/dist.sh
+
+.PHONY: all lint dist
